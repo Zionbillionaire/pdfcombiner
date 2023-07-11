@@ -2,7 +2,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter.ttk import Progressbar
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 class PDFCombiner:
@@ -42,6 +42,9 @@ class PDFCombiner:
 
         self.combine_button = tk.Button(self.button_frame, text='Combine PDFs', command=self.combine_pdfs, bg=fg_color, fg=bg_color)
         self.combine_button.pack(side=tk.LEFT, padx=10)
+
+        self.split_button = tk.Button(self.button_frame, text='Split PDF', command=self.split_pdf, bg=fg_color, fg=bg_color)
+        self.split_button.pack(side=tk.LEFT, padx=10)
 
         self.progress = Progressbar(root, length=500, mode='determinate')
         self.progress.pack(pady=10)
@@ -101,6 +104,29 @@ class PDFCombiner:
             merger.write(output)
             merger.close()
             messagebox.showinfo("Success", f"PDFs combined successfully into {os.path.basename(output)}")
+            self.progress['value'] = 0
+
+    def split_pdf(self):
+        file = filedialog.askopenfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
+        if file:
+            pdf = PdfReader(file)
+            total_pages = len(pdf.pages)
+            self.progress['maximum'] = total_pages
+
+            for page in range(total_pages):
+                pdf_writer = PdfWriter()
+                pdf_writer.add_page(pdf.pages[page])
+
+                output_filename = f"{os.path.splitext(os.path.basename(file))[0]}_page_{page+1}.pdf"
+                output_path = os.path.join(os.path.dirname(file), output_filename)
+
+                with open(output_path, 'wb') as output_pdf:
+                    pdf_writer.write(output_pdf)
+
+                self.progress['value'] = page + 1
+                root.update_idletasks()
+
+            messagebox.showinfo("Success", f"PDF split successfully into {total_pages} files.")
             self.progress['value'] = 0
 
 if __name__ == "__main__":
