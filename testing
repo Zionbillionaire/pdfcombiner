@@ -1,0 +1,258 @@
+import os
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from tkinter.ttk import Progressbar
+from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+from tkinterdnd2 import DND_FILES, TkinterDnD
+import datetime
+import webbrowser
+from pdf2docx import Converter
+import tabula
+
+class MenuBar:
+    def __init__(self, root):
+        self.menubar = tk.Menu(root)
+        root.config(menu=self.menubar)
+
+        self.filemenu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=self.filemenu)
+        self.filemenu.add_command(label="Open", command=None)  # Add functionality here
+        self.filemenu.add_command(label="Save", command=None)  # Add functionality here
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label="Exit", command=root.quit)
+
+        self.helpmenu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Help", menu=self.helpmenu)
+        self.helpmenu.add_command(label="About", command=self.about)  # Add functionality here
+
+    def about(self):
+        messagebox.showinfo("About", "This is a PDF combiner, splitter, and converter program.")
+
+
+class PDFCombiner:
+    def __init__(self, root, expiry_date):
+        self.files = []
+        self.expiry_date = expiry_date
+        root.geometry('600x500')
+
+        bg_color = '#c7d5e0' 
+        fg_color = '#264653' 
+
+        root.configure(bg=bg_color)
+
+        self.frame = tk.Frame(root, bg=bg_color)
+        self.frame.pack(pady=10, fill='both', expand=True)
+
+        self.listbox = tk.Listbox(self.frame, bg=bg_color, fg=fg_color, height=20)
+        self.listbox.pack(pady=10, fill='both', expand=True)
+
+        self.listbox.drop_target_register(DND_FILES)
+        self.listbox.dnd_bind('<<Drop>>', self.drop)
+
+        self.result_box = tk.Text(root, bg='white', fg=fg_color, height=10)
+        self.result_box.pack(pady=10, fill='both', expand=True)
+
+        self.button_frame = tk.Frame(root, bg=bg_color)
+        self.button_frame.pack(pady=10)
+
+        self.add_button = tk.Button(self.button_frame, text='Add PDFs', command=self.add_pdfs, bg=fg_color, fg=bg_color)
+        self.add_button.pack(side=tk.LEFT, padx=10)
+
+        self.remove_button = tk.Button(self.button_frame, text='Remove PDF', command=self.remove_pdf, bg=fg_color, fg=bg_color)
+        self.remove_button.pack(side=tk.LEFT, padx=10)
+
+        self.move_up_button = tk.Button(self.button_frame, text='Move Up', command=self.move_up, bg=fg_color, fg=bg_color)
+        self.move_up_button.pack(side=tk.LEFT, padx=10)
+
+        self.move_down_button = tk.Button(self.button_frame, text='Move Down', command=self.move_down, bg=fg_color, fg=bg_color)
+        self.move_down_button.pack(side=tk.LEFT, padx=10)
+
+        self.combine_button = tk.Button(self.button_frame, text='Combine PDFs', command=self.combine_pdfs, bg=fg_color, fg=bg_color)
+        self.combine_button.pack(side=tk.LEFT, padx=10)
+
+        self.split_button = tk.Button(self.button_frame, text='Split PDF', command=self.split_pdf, bg=fg_color, fg=bg_color)
+        self.split_button.pack(side=tk.LEFT, padx=10)
+
+        self.convert_to_word_button = tk.Button(self.button_frame, text='Convert PDF to Word', command=self.convert_pdf_to_word, bg=fg_color, fg=bg_color)
+        self.convert_to_word_button.pack(side=tk.LEFT, padx=10)
+
+        self.convert_to_excel_button = tk.Button(self.button_frame, text='Convert PDF to Excel', command=self.convert_pdf_to_excel, bg=fg_color, fg=bg_color)
+        self.convert_to_excel_button.pack(side=tk.LEFT, padx=10)
+
+        self.progress = Progressbar(root, length=500, mode='determinate')
+        self.progress.pack(pady=10)
+
+        self.footer_label = tk.Label(root, text=self.get_footer_text(), bg=bg_color, fg=fg_color, cursor="hand2")
+        self.footer_label.pack()
+
+        self.footer_label.bind("<Button-1>", self.open_indiangpt_profile)
+        
+    def add_pdfs(self):
+        if not self.is_key_valid():
+            return
+
+        try:
+            files = filedialog.askopenfilenames(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
+            if files:
+                self.files.extend(files)
+                for file in files:
+                    self.listbox.insert(tk.END, os.path.basename(file))
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to add PDFs. Error: {str(e)}")
+
+    def drop(self, event):
+        if not self.is_key_valid():
+            return
+
+        try:
+            files = root.tk.splitlist(event.data)
+            valid_files = [f for f in files if f.endswith('.pdf')]
+            self.files.extend(valid_files)
+            for file in valid_files:
+                self.listbox.insert(tk.END, os.path.basename(file))
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to drop files. Error: {str(e)}")
+
+    def remove_pdf(self):
+        if not self.is_key_valid():
+            return
+
+        selected = self.listbox.curselection()
+        if selected:
+            self.files.pop(selected[0])
+            self.listbox.delete(selected)
+
+    def move_up(self):
+        if not self.is_key_valid():
+            return
+
+        selected = self.listbox.curselection()
+        if selected:
+            index = selected[0]
+            if index != 0:
+                self.files.insert(index-1, self.files.pop(index))
+                self.listbox.delete(index)
+                self.listbox.insert(index-1, os.path.basename(self.files[index-1]))
+                self.listbox.select_set(index-1)
+
+    def move_down(self):
+        if not self.is_key_valid():
+            return
+
+        selected = self.listbox.curselection()
+        if selected:
+            index = selected[0]
+            if index != len(self.files) - 1:
+                self.files.insert(index+1, self.files.pop(index))
+                self.listbox.delete(index)
+                self.listbox.insert(index+1, os.path.basename(self.files[index+1]))
+                self.listbox.select_set(index+1)
+
+    def combine_pdfs(self):
+        if not self.is_key_valid():
+            return
+
+        if self.files:
+            output_file = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
+            if output_file:
+                try:
+                    self.progress['maximum'] = len(self.files)
+                    self.progress['value'] = 0
+                    merger = PdfMerger()
+
+                    for file in self.files:
+                        merger.append(file)
+                        self.progress['value'] += 1
+                        root.update_idletasks()
+
+                    merger.write(output_file)
+                    merger.close()
+
+                    messagebox.showinfo("Success", f"All PDFs combined successfully into {os.path.basename(output_file)}")
+                    self.result_box.insert(tk.END, f"All PDFs combined successfully into {os.path.basename(output_file)}\n")
+
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to combine PDFs. Error: {str(e)}")
+
+    def split_pdf(self):
+        if not self.is_key_valid():
+            return
+
+        try:
+            file = filedialog.askopenfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
+            if file:
+                output_folder = filedialog.askdirectory()
+                if output_folder:
+                    reader = PdfReader(file)
+                    self.progress['maximum'] = len(reader.pages)
+                    self.progress['value'] = 0
+
+                    for i, page in enumerate(reader.pages):
+                        writer = PdfWriter()
+                        writer.add_page(page)
+
+                        output_file = os.path.join(output_folder, f"{os.path.basename(file).replace('.pdf', '')}_page_{i+1}.pdf")
+                        writer.write(output_file)
+
+                        self.progress['value'] += 1
+                        root.update_idletasks()
+
+                        self.result_box.insert(tk.END, f"Page {i+1} of {os.path.basename(file)} split successfully into {os.path.basename(output_file)}\n")
+
+                    messagebox.showinfo("Success", f"PDF split successfully into {len(reader.pages)} files")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to split PDF. Error: {str(e)}")
+
+    def convert_pdf_to_word(self):
+        if not self.is_key_valid():
+            return
+
+        try:
+            file = filedialog.askopenfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
+            if file:
+                output = filedialog.asksaveasfilename(defaultextension=".docx", filetypes=[("Word files", "*.docx")])
+                if output:
+                    cv = Converter(file)
+                    cv.convert(output, start=0, end=None)
+                    cv.close()
+                    messagebox.showinfo("Success", f"PDF converted successfully to {os.path.basename(output)} Word file")
+                    self.result_box.insert(tk.END, f"PDF converted successfully to {os.path.basename(output)} Word file\n")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to convert PDF to Word. Error: {str(e)}")
+
+    def convert_pdf_to_excel(self):
+        if not self.is_key_valid():
+            return
+
+        try:
+            file = filedialog.askopenfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
+            if file:
+                output = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+                if output:
+                    df = tabula.read_pdf(file, pages='all')
+                    with pd.ExcelWriter(output) as writer:
+                        for i, data in enumerate(df):
+                            data.to_excel(writer, sheet_name=f'Sheet{i+1}', index=False)
+                    messagebox.showinfo("Success", f"PDF converted successfully to {os.path.basename(output)} Excel file")
+                    self.result_box.insert(tk.END, f"PDF converted successfully to {os.path.basename(output)} Excel file\n")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to convert PDF to Excel. Error: {str(e)}")
+    def is_key_valid(self):
+        if datetime.datetime.now() > self.expiry_date:
+            messagebox.showerror("Error", "The software key has expired. Please renew the key to continue using the software.")
+            return False
+        return True
+
+    def get_footer_text(self):
+        return f"Software Key Valid Until {self.expiry_date.strftime('%Y-%m-%d')} | Built by IndianGPT"
+
+    def open_indiangpt_profile(self, event):
+        webbrowser.open_new_tab('https://github.com/indiangpt')
+
+
+if __name__ == "__main__":
+    root = TkinterDnD.Tk()
+    MenuBar(root)
+    expiry_date = datetime.datetime.strptime("2025-12-31", "%Y-%m-%d")
+    PDFCombiner(root, expiry_date)
+    root.mainloop()
