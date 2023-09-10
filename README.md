@@ -1,41 +1,39 @@
+
 **PDF Combiner**
 PDF Combiner is a user-friendly, GUI-based tool built in Python for combining and splitting PDF files. It is easy to use, supports drag-and-drop, and allows you to adjust the order of files before combining.
 
+
+
+[Screenshot](https://a.fsdn.com/con/app/proj/pdfcombiner/screenshots/new-1cabc012.png/max/max/1)
+
+
+
 **Features**
-**Combine PDFs**: Select multiple PDF files and combine them into a single PDF.
-**Split PDFs:** Select a PDF file and split it into multiple PDFs, one for each page.
-**Adjust Order:** Easily adjust the order of selected PDF files before combining.
-**Drag and Drop:** Conveniently add PDF files by dragging and dropping them into the application window.
-**Progress Bar:** Monitor the progress of your file combining or splitting with a visual progress bar.
-**Prerequisites**
-Before you begin, ensure you have met the following requirements:
+- Combine PDFs: Merge multiple PDF files into a single document effortlessly.
+- Split PDFs: Split large PDF files into smaller, more manageable documents.
+- Convert to Word: Convert PDF files to Word documents (.docx) for easy editing.
+- Convert to Excel: Extract tables from PDFs and save them as Excel spreadsheets.
+- Images to PDF: Create PDF documents from image files (JPG and PNG).
+- Batch Conversion: Convert multiple PDFs to Word or Excel in one go.
+- User-Friendly Interface: A modern and intuitive graphical interface for a seamless experience.
+- Cross-Platform: Runs on Windows, macOS, and Linux.
 
-You have installed **Python 3.6** or later.
-You have installed the necessary Python libraries: **tkinter, PyPDF2, and tkinterdnd2**.
-Installation
-Clone the GitHub repository:
-
-git clone https://github.com/megnush/PDFCombiner.git
-
-nstall the necessary Python packages:
-
-pip install **PyPDF2**
-pip install **tkinterdnd2**
-
-**Using PDF Combiner**
-To use PDF Combiner, follow these steps:
-
-Run the script:
-python pdf_combiner.py
+**Usage**
+- Launch the PDF Combiner application.
+- Add PDF files to the list.
+- Use the buttons to perform various operations (Combine, Split, Convert, etc.).
+- View the progress and results in the application interface.
 
 
-Add PDF files by clicking on the "Add PDFs" button or by dragging and dropping files into the application window.
+**Contributing**
+Contributions are welcome! If you'd like to contribute to this project, please follow these steps:
 
-Adjust the order of the files using the "Move Up" and "Move Down" buttons, if necessary.
+- Fork the repository.
+- Create a new branch for your feature or bug fix.
+- Make your changes and commit them.
+- Push your changes to your fork.
+- Create a pull request to the main repository.
 
-Click "Combine PDFs" to combine the selected PDF files into a single file. You will be prompted to choose a location to save the combined file.
-
-To split a PDF, click "Split PDF" and select a PDF file. The PDF will be split into separate files for each page.
 
 **Contact**
 If you want to contact me, you can reach me at **megnush@gmail.com**.
